@@ -15,54 +15,32 @@
   *
   ******************************************************************************
   */
-/* USER CODE END Header */
-/* Includes ------------------------------------------------------------------*/
 #include "main.h"
-
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
-/* USER CODE END Includes */
 
-/* Private typedef -----------------------------------------------------------*/
-/* USER CODE BEGIN PTD */
-
-/* USER CODE END PTD */
-
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
-
-/* USER CODE END PD */
-
-/* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
 #define MAX_FREQ_H 20000
-#define MAX_FREQ_V 500
+#define MAX_FREQ_V 150
 #define MAX_FREQ_STEP_H 2000
 #define SMALL_FREQ_STEP_H 600
-/* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
-
 I2C_HandleTypeDef hi2c1;
-
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim15;
 TIM_HandleTypeDef htim16;
 DMA_HandleTypeDef hdma_tim16_ch1_up;
-
 UART_HandleTypeDef huart2;
 UART_HandleTypeDef huart3;
 
-/* USER CODE BEGIN PV */
 uint8_t rcv_buf[64];
 GPIO_PinState curDirState_v = GPIO_PIN_RESET;
 GPIO_PinState curDirState_h = GPIO_PIN_RESET;
 bool dirChanged_h = false;
+
 // store last frequency set for horizontal and vertical rotation:
 // prevents motor from stalling due to frequency changing too fast
 uint32_t prev_freq_h = 0;
@@ -86,12 +64,6 @@ void SetPWMFrequency(TIM_HandleTypeDef *htim, uint32_t channel, uint32_t frequen
 void pullTrigger(TIM_HandleTypeDef *htim, uint32_t channel);
 void parse_cmd(char *buf);
 
-/* USER CODE END PFP */
-
-/* Private user code ---------------------------------------------------------*/
-/* USER CODE BEGIN 0 */
-
-/* USER CODE END 0 */
 
 /**
   * @brief  The application entry point.
@@ -100,29 +72,15 @@ void parse_cmd(char *buf);
 int main(void)
 {
 
-  /* USER CODE BEGIN 1 */
   uint32_t raw;
   char msg[100];
-  uint16_t count = 0;
-  uint32_t freq = 0;
 
-  /* USER CODE END 1 */
-
-  /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
 
-  /* USER CODE BEGIN Init */
-
-  /* USER CODE END Init */
-
   /* Configure the system clock */
   SystemClock_Config();
-
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
@@ -134,39 +92,23 @@ int main(void)
   MX_I2C1_Init();
   MX_TIM3_Init();
   MX_TIM15_Init();
-  /* USER CODE BEGIN 2 */
-//  HAL_NVIC_SetPriority(USART3_IRQn, 0, 0);
-//  HAL_NVIC_EnableIRQ(USART3_IRQn);
 
-  // pwm for vertical rotation stepper
+
+  // PWM for vertical rotation stepper
   TIM16->CCR1 = 100;
   HAL_TIM_PWM_Start(&htim16, TIM_CHANNEL_1);
-  // pwm for trigger pull stepper
+  // PWM for trigger pull stepper
   TIM3->CCR1 = 50;
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
   TIM15->CCR1 = 100;
   HAL_TIM_PWM_Start(&htim15, TIM_CHANNEL_1);
 
-//  HAL_GPIO_TogglePin (GPIOC, GPIO_PIN_6);
-
-//  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
-//  HAL_GPIO_WritePin(GPIOA, 7, GPIO_PIN_RESET);
-//  HAL_Delay(5000);
-  /* USER CODE END 2 */
-
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
   while (1)
   {
 	HAL_ADC_Start(&hadc1);
 	HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
 	raw = HAL_ADC_GetValue(&hadc1);
 
-//	HAL_GPIO_WritePin(GPIOB, 0, GPIO_PIN_RESET);
-
-
-	sprintf(msg, "%hu hello\r\n", raw);
-//	HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
 	memset(rcv_buf, 0, sizeof(rcv_buf));
 
 	HAL_UART_Receive(&huart3, rcv_buf, 11, 100);
@@ -174,49 +116,10 @@ int main(void)
 	parse_cmd((char *)rcv_buf);
 
 
-//	HAL_UART_Receive_IT(&huart3, rcv_buf, sizeof(rcv_buf));
 	sprintf(msg, "%s \r\n", (char *)rcv_buf);
-//	HAL_UART_Transmit(&huart2, msg, strlen((char *)msg), HAL_MAX_DELAY);
 
-//	if (count>2000) {
-//		SetPWMFrequency(&htim16, TIM_CHANNEL_1, 17000);
-//		msg = "17000\r\n";
-//		HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
-//	}
-
-
-//	if (count>5000 && count<=8000) {
-//		SetPWMFrequency(&htim16, TIM_CHANNEL_1, 3000);
-//		sprintf(msg, "12000\r\n");
-//		HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
-//	}
-//	else if (count>8000) {
-//		SetPWMFrequency(&htim16, TIM_CHANNEL_1, 2000);
-//		sprintf(msg, "7000\r\n");
-//		HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
-//	}
-
-
-//	else if (count>11000) {
-//		SetPWMFrequency(&htim16, TIM_CHANNEL_1, 700);
-//		msg = "1700";
-//		HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
-//	}
-
-//	freq = ((uint32_t)raw*3000)/4095;
-
-//	sprintf(msg, "%u\r\n", freq);
-//	HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
-//
-//	SetPWMFrequency(&htim16, TIM_CHANNEL_1, freq);
-	count++;
-//	HAL_Delay(10);
 	HAL_Delay(1);
-    /* USER CODE END WHILE */
-
-    /* USER CODE BEGIN 3 */
   }
-  /* USER CODE END 3 */
 }
 
 /**
@@ -275,17 +178,8 @@ void SystemClock_Config(void)
   */
 static void MX_ADC1_Init(void)
 {
-
-  /* USER CODE BEGIN ADC1_Init 0 */
-
-  /* USER CODE END ADC1_Init 0 */
-
   ADC_MultiModeTypeDef multimode = {0};
   ADC_ChannelConfTypeDef sConfig = {0};
-
-  /* USER CODE BEGIN ADC1_Init 1 */
-
-  /* USER CODE END ADC1_Init 1 */
 
   /** Common config
   */
@@ -329,9 +223,6 @@ static void MX_ADC1_Init(void)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN ADC1_Init 2 */
-
-  /* USER CODE END ADC1_Init 2 */
 
 }
 
@@ -342,14 +233,6 @@ static void MX_ADC1_Init(void)
   */
 static void MX_I2C1_Init(void)
 {
-
-  /* USER CODE BEGIN I2C1_Init 0 */
-
-  /* USER CODE END I2C1_Init 0 */
-
-  /* USER CODE BEGIN I2C1_Init 1 */
-
-  /* USER CODE END I2C1_Init 1 */
   hi2c1.Instance = I2C1;
   hi2c1.Init.Timing = 0x10909CEC;
   hi2c1.Init.OwnAddress1 = 0;
@@ -377,10 +260,6 @@ static void MX_I2C1_Init(void)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN I2C1_Init 2 */
-
-  /* USER CODE END I2C1_Init 2 */
-
 }
 
 /**
@@ -391,16 +270,9 @@ static void MX_I2C1_Init(void)
 static void MX_TIM3_Init(void)
 {
 
-  /* USER CODE BEGIN TIM3_Init 0 */
-
-  /* USER CODE END TIM3_Init 0 */
-
   TIM_MasterConfigTypeDef sMasterConfig = {0};
   TIM_OC_InitTypeDef sConfigOC = {0};
 
-  /* USER CODE BEGIN TIM3_Init 1 */
-
-  /* USER CODE END TIM3_Init 1 */
   htim3.Instance = TIM3;
   htim3.Init.Prescaler = 800-1;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
@@ -425,9 +297,7 @@ static void MX_TIM3_Init(void)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN TIM3_Init 2 */
 
-  /* USER CODE END TIM3_Init 2 */
   HAL_TIM_MspPostInit(&htim3);
 
 }
@@ -440,17 +310,10 @@ static void MX_TIM3_Init(void)
 static void MX_TIM15_Init(void)
 {
 
-  /* USER CODE BEGIN TIM15_Init 0 */
-
-  /* USER CODE END TIM15_Init 0 */
-
   TIM_MasterConfigTypeDef sMasterConfig = {0};
   TIM_OC_InitTypeDef sConfigOC = {0};
   TIM_BreakDeadTimeConfigTypeDef sBreakDeadTimeConfig = {0};
 
-  /* USER CODE BEGIN TIM15_Init 1 */
-
-  /* USER CODE END TIM15_Init 1 */
   htim15.Instance = TIM15;
   htim15.Init.Prescaler = 80-1;
   htim15.Init.CounterMode = TIM_COUNTERMODE_UP;
@@ -490,9 +353,7 @@ static void MX_TIM15_Init(void)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN TIM15_Init 2 */
 
-  /* USER CODE END TIM15_Init 2 */
   HAL_TIM_MspPostInit(&htim15);
 
 }
@@ -505,16 +366,9 @@ static void MX_TIM15_Init(void)
 static void MX_TIM16_Init(void)
 {
 
-  /* USER CODE BEGIN TIM16_Init 0 */
-
-  /* USER CODE END TIM16_Init 0 */
-
   TIM_OC_InitTypeDef sConfigOC = {0};
   TIM_BreakDeadTimeConfigTypeDef sBreakDeadTimeConfig = {0};
 
-  /* USER CODE BEGIN TIM16_Init 1 */
-
-  /* USER CODE END TIM16_Init 1 */
   htim16.Instance = TIM16;
   htim16.Init.Prescaler = 80-1;
   htim16.Init.CounterMode = TIM_COUNTERMODE_UP;
@@ -552,9 +406,7 @@ static void MX_TIM16_Init(void)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN TIM16_Init 2 */
 
-  /* USER CODE END TIM16_Init 2 */
   HAL_TIM_MspPostInit(&htim16);
 
 }
@@ -567,13 +419,6 @@ static void MX_TIM16_Init(void)
 static void MX_USART2_UART_Init(void)
 {
 
-  /* USER CODE BEGIN USART2_Init 0 */
-
-  /* USER CODE END USART2_Init 0 */
-
-  /* USER CODE BEGIN USART2_Init 1 */
-
-  /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
   huart2.Init.BaudRate = 115200;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
@@ -588,9 +433,6 @@ static void MX_USART2_UART_Init(void)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN USART2_Init 2 */
-
-  /* USER CODE END USART2_Init 2 */
 
 }
 
@@ -602,13 +444,6 @@ static void MX_USART2_UART_Init(void)
 static void MX_USART3_UART_Init(void)
 {
 
-  /* USER CODE BEGIN USART3_Init 0 */
-
-  /* USER CODE END USART3_Init 0 */
-
-  /* USER CODE BEGIN USART3_Init 1 */
-
-  /* USER CODE END USART3_Init 1 */
   huart3.Instance = USART3;
   huart3.Init.BaudRate = 115200;
   huart3.Init.WordLength = UART_WORDLENGTH_8B;
@@ -623,9 +458,6 @@ static void MX_USART3_UART_Init(void)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN USART3_Init 2 */
-
-  /* USER CODE END USART3_Init 2 */
 
 }
 
@@ -653,8 +485,6 @@ static void MX_DMA_Init(void)
 static void MX_GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
-/* USER CODE BEGIN MX_GPIO_Init_1 */
-/* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOC_CLK_ENABLE();
@@ -698,27 +528,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-/* USER CODE BEGIN MX_GPIO_Init_2 */
-/* USER CODE END MX_GPIO_Init_2 */
 }
-
-/* USER CODE BEGIN 4 */
-//void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
-//    if (huart->Instance == USART3) {
-//        // Handle received data
-//        HAL_UART_Transmit(&huart2, rcv_buf, sizeof(rcv_buf), HAL_MAX_DELAY);
-//
-//        // Re-enable UART receive interrupt
-//        HAL_UART_Receive_IT(&huart3, rcv_buf, sizeof(rcv_buf));
-//    }
-//}
-
 
 
 void SetPWMFrequency(TIM_HandleTypeDef *htim, uint32_t channel, uint32_t frequency)
 {
     uint32_t timer_clock = HAL_RCC_GetPCLK1Freq(); // Get the timer clock frequency
-//    uint32_t prescaler = 0;
     uint32_t period = 0;
 
     if (htim == &htim15) {
@@ -749,10 +564,6 @@ void SetPWMFrequency(TIM_HandleTypeDef *htim, uint32_t channel, uint32_t frequen
 
         	}
     	} else if (frequency >= prev_freq_h + MAX_FREQ_STEP_H) {
-//        	frequency = (frequency + prev_freq_h)/2;
-        	// 2500, 500 works well for 20000 Hz
-    			// also 1000, 700
-        	// 2000, 100-150 works well for 25000 Hz
         	frequency = prev_freq_h + SMALL_FREQ_STEP_H;
         }
         else if (prev_freq_h >= MAX_FREQ_STEP_H && frequency <= prev_freq_h - MAX_FREQ_STEP_H) {
@@ -761,19 +572,10 @@ void SetPWMFrequency(TIM_HandleTypeDef *htim, uint32_t channel, uint32_t frequen
         prev_freq_h = frequency;
     }
 
-
-    // Calculate prescaler and period
-//    for (prescaler = 0; prescaler <= 0xFFFF; prescaler++) {
-//        period = (timer_clock / (frequency * (prescaler + 1))) - 1;
-//        if (period <= 0xFFFF) {
-//            break;
-//        }
-//    }
     if (frequency==0) HAL_TIM_PWM_Stop(htim, channel);
     else {
     	period = (timer_clock) / (frequency * (79 + 1)) - 1;
         htim->Instance->ARR = period;
-//        TIM16->CCR1 = period/2;
         htim->Instance->CCR1 = period/2;
 
         // Update registers
@@ -782,14 +584,9 @@ void SetPWMFrequency(TIM_HandleTypeDef *htim, uint32_t channel, uint32_t frequen
 
 
     // Update the timer settings
-//    htim->Instance->PSC = prescaler;
-
     char msg_buf[100];
-//    sprintf(msg_buf, "current frequency: %lu\r\n", frequency);
-//    HAL_UART_Transmit(&huart2, (uint8_t*)msg_buf, strlen(msg_buf), HAL_MAX_DELAY);
-    // NOTE: NOT SURE IF THIS DELAY SHOULD BE IN HERE YET
-//    HAL_Delay(10);
-//    HAL_Delay(150);
+    sprintf(msg_buf, "current frequency: %lu\r\n", frequency);
+    HAL_UART_Transmit(&huart2, (uint8_t*)msg_buf, strlen(msg_buf), HAL_MAX_DELAY);
 
 }
 
@@ -805,36 +602,16 @@ void pullTrigger(TIM_HandleTypeDef *htim, uint32_t channel)
     char msg_buf[100];
     sprintf(msg_buf, "Trigger pulled");
     HAL_UART_Transmit(&huart2, (uint8_t*)msg_buf, strlen(msg_buf), HAL_MAX_DELAY);
+
 }
 
 
 void parse_cmd(char * in_buf) {
-	/*
-	 Debugging notes:
-	 For some reason, it's getting a leftJoyStickY value of 0 irreqularly. Probably
-	 has something to do with the way the buffer is being tokenized or the buffer
-	 that's being received. I debug the value of the buffer next to verify this, then
-	 fix the problem.
 
-	 Might need to zero buffer out
-
-	 Kind of difficult to debug with the debugger because it messes with the data
-	 transmission timing.
-
-	 Direction shift is also not working for some reason, so I need to figure that out.
-	 */
 	if (strlen(in_buf)<5) return;
 	char buf[12];
 	strcpy(buf, in_buf);
-//	if (buf[10]!=47) {
-//		for(int i=0; i<5; i++) {
-//			if (buf[i]==47) return;
-//		}
-//	} else {
-//		for (int i=0; i<5; i++) {
-//			if (buf[i]==47) return;
-//		}
-//	}
+
 	char msg_buf[100];
 	sprintf(msg_buf, "buf: %s\r\n", buf);
 	HAL_UART_Transmit(&huart2, (uint8_t*)msg_buf, strlen(msg_buf), HAL_MAX_DELAY);
@@ -844,25 +621,16 @@ void parse_cmd(char * in_buf) {
 	char *token = strtok(buf, ",");
 	int leftJoystickX = atoi(token);
 	if (strlen(token)>1 && leftJoystickX==0) return;
-//	if (strlen(token)>1 && leftJoystickX==0) return;
-//	sprintf(msg_buf, "token: %s\r\n", token);
-//	HAL_UART_Transmit(&huart2, (uint8_t*)msg_buf, strlen(msg_buf), HAL_MAX_DELAY);
-//	HAL_UART_Transmit(&huart2, (uint8_t*)token, strlen(token), HAL_MAX_DELAY);
+
 	token = strtok(NULL, ",");
-//	HAL_UART_Transmit(&huart2, (uint8_t*)token, strlen(token), HAL_MAX_DELAY);
 	int leftJoystickY = atoi(token);
 	if (strlen(token)>1 && leftJoystickY==0) return;
-//	sprintf(msg_buf, "left joystick y: %d\r\n", leftJoystickY);
-//	HAL_UART_Transmit(&huart2, (uint8_t*)msg_buf, strlen(msg_buf), HAL_MAX_DELAY);
+
 	token = strtok(NULL, "/");
 	int triggerPulled = atoi(token);
 	if (token==NULL) return;
 	sprintf(msg_buf, "token: %s\r\n", token);
 	HAL_UART_Transmit(&huart2, (uint8_t*)msg_buf, strlen(msg_buf), HAL_MAX_DELAY);
-//	HAL_UART_Transmit(&huart2, (uint8_t*)token, strlen(token), HAL_MAX_DELAY);
-
-//	HAL_UART_Transmit(&huart2, (uint8_t*)buf, strlen(buf), HAL_MAX_DELAY);
-//	GPIO_PinState pinState = HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_5);
 
 	if (curDirState_v == GPIO_PIN_SET && leftJoystickY<0) {
 	    // Pin is high
@@ -876,25 +644,11 @@ void parse_cmd(char * in_buf) {
 
 	if (curDirState_h == GPIO_PIN_SET && leftJoystickX<0) {
 		// Pin is high
-//		HAL_GPIO_TogglePin (GPIOB, GPIO_PIN_0);
-//		curDirState_h = GPIO_PIN_RESET;
 		dirChanged_h = true;
 	} else if (curDirState_h == GPIO_PIN_RESET && leftJoystickX>0){
 		// Pin is low
-//		HAL_GPIO_TogglePin (GPIOB, GPIO_PIN_0);
-//		curDirState_h = GPIO_PIN_SET;
 		dirChanged_h = true;
 	}
-
-//	if (leftJoystickX >= prev_leftJoystickX + 15) {
-//		leftJoystickX = prev_leftJoystickX + 5;
-//		prev_leftJoystickX = leftJoystickX;
-//	} else if (leftJoystickX <= prev_leftJoystickX - 15) {
-//		leftJoystickX = prev_leftJoystickX - 5;
-//		prev_leftJoystickX = leftJoystickX;
-//	}
-
-
 
 	if (leftJoystickY<0) {
 		leftJoystickY = -leftJoystickY;
@@ -906,32 +660,14 @@ void parse_cmd(char * in_buf) {
 	uint32_t frequency_v = ((uint32_t)(leftJoystickY)*MAX_FREQ_V)/128; // note: max is 3000
 	uint32_t frequency_h = ((uint32_t) leftJoystickX*MAX_FREQ_H)/128;
 	if (triggerPulled==1) pullTrigger(&htim3, TIM_CHANNEL_1);
-//	if (frequency==0) frequency = 1;
+
 	sprintf(msg_buf, "freq: %lu\r\n", frequency_v);
-//	HAL_UART_Transmit(&huart2, (uint8_t*)msg_buf, strlen(msg_buf), HAL_MAX_DELAY);
+	HAL_UART_Transmit(&huart2, (uint8_t*)msg_buf, strlen(msg_buf), HAL_MAX_DELAY);
 	SetPWMFrequency(&htim16, TIM_CHANNEL_1, frequency_v);
 	SetPWMFrequency(&htim15, TIM_CHANNEL_1, frequency_h);
 
-
-//	int cmds_idx = 0;
-//	int last_buf_idx = 0;
-//	char *cmds[10];
-//	for (int i=0; i<strlen(buf); i++) {
-//		if (buf[i]=='\0') break;
-//		if (buf[i] == 32) {
-//			strncpy(cmds[cmds_idx], buf+last_buf_idx, i-last_buf_idx);
-//			cmds[cmds_idx][i-last_buf_idx] = '\0';
-//			cmds_idx++;
-//			last_buf_idx = i;
-//		}
-//	}
-//	char msg_buf[100];
-//	sprintf(msg_buf, "second cmd: %s", cmds[1]);
-//	HAL_UART_Transmit(&huart2, (uint8_t*)msg_buf, 20, HAL_MAX_DELAY);
 }
 
-
-/* USER CODE END 4 */
 
 /**
   * @brief  This function is executed in case of error occurrence.
